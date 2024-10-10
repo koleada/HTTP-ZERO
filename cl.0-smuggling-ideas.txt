@@ -1,0 +1,38 @@
+james kettle's request smuggler does not account for all CL.0 desync vectors. 
+
+Specifically it does not account for GET request based smuggling using obfuscated CL headers (using the same obfuscation techniques as TE). CL.0 smuggling can also happen when invalid headers trigger a server error eg 400. occasionally when this happens the server does not consume the body of the request or closing the connection. 
+
+2 methods: both apply to HTTP/1.1 and HTTP/2 so long as its downgraded on the backend
+
+	- GET w/ obfuscated CL header 
+	- 400 error immediatly followed by valid request
+	
+
+***** try to use this library to make H2 requests: https://github.com/nxenon/h2spacex *****
+
+
+**** JAMES KETTLE NOTES:
+Next, recall you can only poison requests that are routed to the same back-end server. Since routing might be based on the request 
+cookie, path, method or any other request property you should start with a 'victim' request that's near-identical to the attack 
+request, then change each value and retry the attack in turn until the victim request resembles a regular GET request sent by another user.
+
+If the regular GET request is still getting poisoned but you can't exploit other users, or the vulnerability is only visible 
+intermittently, one possibility is that the target has multiple front-end servers and only some of them are vulnerable. You can 
+explore this possibility using dig.Finally, the front-end's connection reuse might be tied to your IP. To explore this, try sending
+the victim requests from a different IP. If you find you're genuinely only able to affect requests from your own IP, the practical
+impact is limited to exploiting other people on the same corporate network... or direct attacks like the one I demonstrated on New Relic.
+
+
+
+
+        # include a set amount of time so we can detect timeouts our self and proceed accordingly. this allows us to not have to wait for H2 itself to throw the error
+        if time.time() - start_time > timeout:
+            raise TimeoutError("Response timed out.")
+        
+        try:
+            # read raw data from the socket
+            data = sock.recv(65536)
+            if not data:
+                raise ConnectionError("Socket connection closed prematurely.")
+        except socket.timeout:
+            raise TimeoutError("Socket read timed out.")
