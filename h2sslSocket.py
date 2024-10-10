@@ -18,8 +18,12 @@ def setSocket(host, port=443, timeout=5):
     ctx = ssl.create_default_context(cafile=certifi.where())
     ctx.set_alpn_protocols(['h2'])
 
-    # open a socket to the server and initiate TLS/SSL
-    sock = socket.create_connection((host, port))
+    try:
+        # open a socket to the server and initiate TLS/SSL
+        sock = socket.create_connection((host, port))
+    except socket.error as e:
+        raise ConnectionError(f"Failed to create socket: {e}")
+        return None
     sock = ctx.wrap_socket(sock, server_hostname=host)
 
     config = H2Configuration(client_side=True, header_encoding='utf-8', validate_outbound_headers=False, normalize_outbound_headers=False)
@@ -139,7 +143,7 @@ def send_multiple_requests(sock, h2_conn, host, requests):
 
 def main():
     # Setup socket and H2 connection
-    host = 'www.google.com'
+    host = 'www.t.com'
     path = '/'
     port = 443
     timeout = 5

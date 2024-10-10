@@ -11,8 +11,12 @@ def create_https_connection(host, port=443):
     # Optionally, use the certifi bundle (set the default CA certs)
     context.load_verify_locations(cafile=certifi.where())
 
-    # Create the socket and establish the connection
-    raw_socket = socket.create_connection((host, port))
+    try:
+        # Create the socket and establish the connection
+        raw_socket = socket.create_connection((host, port))
+    except socket.error as e:
+        raise ConnectionError(f"Failed to create socket: {e}")
+        return None
     
     # Wrap the socket with SSL
     ssl_socket = context.wrap_socket(raw_socket, server_hostname=host)
@@ -148,7 +152,7 @@ def read_chunked_body(ssl_socket, initial_body):
     
 
 def main():
-    host = "www.google.com"
+    host = "t.com"
     path = "/"
     
     # can simply repeat these 3 steps over and over to send multiple requests on the same connection (socket) note that in our real version we can simply pass all headers to the 

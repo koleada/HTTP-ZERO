@@ -1,4 +1,4 @@
-#!/root/coding-scripts/requestSmuggler/smuggling-venv/bin/python3
+#!/home/kole/coding/HTTP-ZERO/smuggling-venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys
