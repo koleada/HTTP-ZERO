@@ -6,6 +6,13 @@ Specifically it does not account for GET request based smuggling using obfuscate
 
 	- GET w/ obfuscated CL header 
 	- 400 error immediatly followed by valid request
+
+
+
+**** add tests for CL.0 and TE.0 using a invalid method. So make the method be 'FOO' or something like that
+
+
+
 	
 ** learn more about how CL.0 and TE.0 work try to discern what http methods/ obfuscation techniques could be useful. Very hard to say   as 
 there is barely any research. Still look at James Kettles posts on TE.0 and why he didnt think it would work. Will also need to learn 

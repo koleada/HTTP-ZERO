@@ -9,6 +9,8 @@ from h2.config import H2Configuration
 from bs4 import BeautifulSoup
 import jsbeautifier
 
+from httpClasses import HTTPResponse, HTTPRequest
+
 ## ALL HTTP/2 HEADERS MUST BE LOWERCASE
 
 def setSocket(host, port=443, timeout=5):
@@ -43,31 +45,32 @@ def send_request(sock, conn, host, method='GET', path='/', req_headers=None, bod
         (':path', f'{path}'),
         (':authority', f'{host}'),
         (':scheme', 'https'),
+        ('content-type', 'application/x-www-form-urlencoded')
         # NOTE: no connection: keep-alive is needed. HTTP/2 basically keeps the connection alive by default. Including the header will cause errors/weird behavior
     ]
     if req_headers:
         for i in req_headers:
             headers.append(i)
     
-    if body:
-        headers.append(("content-length", str(len(body.encode('utf-8')))))
+    
     
     # Start the request on a new stream (stream_id = 1)
     stream_id = conn.get_next_available_stream_id()
         
     conn.send_headers(1, headers)
     if body:
+        request = HTTPRequest(method, host, path, 'HTTP/2', headers=headers, body=body)
         body = body.encode('utf-8')
         conn.send_data(stream_id, body, end_stream=True)
     else:
+        request = HTTPRequest(method, host, path, 'HTTP/2', headers=headers)
         conn.end_stream(stream_id)
-    print('ok')   
     sock.sendall(conn.data_to_send())
-    return stream_id, gzipFlag
+    return request, stream_id, gzipFlag
 
 def receive_response(sock, conn, stream_id, host, path='/', gzipFlag=False, timeout=5):
     body = b''
-    response_headers = []
+    response_headers = ""
     response_stream_ended = False
     while not response_stream_ended:
 
@@ -83,9 +86,11 @@ def receive_response(sock, conn, stream_id, host, path='/', gzipFlag=False, time
             # Handle header events
             if isinstance(event, h2.events.ResponseReceived):
                 for n,v in event.headers:
-                    response_headers.append((n, v))
+                    response_headers += (f'{n}: {v}\n')
                     if 'gzip' in v and 'content-encoding' in n:
                         gzipFlag = True
+                    if ":status" in n:
+                        status_code = v
                 
             if isinstance(event, h2.events.DataReceived):
                 # update flow control so the server doesn't starve us
@@ -101,13 +106,16 @@ def receive_response(sock, conn, stream_id, host, path='/', gzipFlag=False, time
         # send any pending data to the server
         
         sock.sendall(conn.data_to_send())
-    if gzipFlag:
+    if gzipFlag and body:
         print(gzipFlag)
         try:
             body = gzip.decompress(body)
         except gzip.BadGzipFile:
             pass
-    return body.decode('utf-8'), response_headers
+    if body:
+        return HTTPResponse(status_code, response_headers, body.decode('utf-8'), 'HTTP/2')
+    else:
+        return HTTPResponse(status_code, response_headers, "", 'HTTP/2')
      
 def beautify_response_body(response_body):
     # Parse the response body using BeautifulSoup
@@ -143,8 +151,8 @@ def send_multiple_requests(sock, h2_conn, host, requests):
 
 def main():
     # Setup socket and H2 connection
-    host = 'www.t.com'
-    path = '/'
+    host = 'www.google.com'
+    path = r'/%20HTTP/1.1%0d%0aHost:%20www.google.com%0d%0aConnection:%20keep-alive%0d%0a%0d%0aGET%20/%20HTTP/1.1%0d%0aFoo:%20bar'
     port = 443
     timeout = 5
     
@@ -154,15 +162,15 @@ def main():
     req_body = "GET /sdfsdf HTTP/1.1\r\nFoo: x"
 
     # Send GET request   
-    stream_id, gzipFlag = send_request(sock, conn, method='GET', host=host, path=path, body=req_body)
+    req, stream_id, gzipFlag = send_request(sock, conn, method='GET', host=host, path=path)#, body=req_body)
 
+    print(req)
+    
     # Receive and display the response
-    body, resp_headers = receive_response(sock, conn, stream_id, host, path, gzipFlag)
+    resp = receive_response(sock, conn, stream_id, host, path, gzipFlag)
     
     
-    for n,v in resp_headers:
-        print(f"{n}: {v}")
-    print("\n" + beautify_response_body(body))
+    print(beautify_response_body(resp.body))
     
     
     # tell the server we are closing the h2 connection
